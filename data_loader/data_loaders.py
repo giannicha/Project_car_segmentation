@@ -59,7 +59,7 @@ class CustomDataset(torch.utils.data.Dataset):
                 [[self.img_data[idx_1 + 1000 * idx_2] for idx_1 in range(train_idx, int(len(self.img_data) / folder_num))]
                  for idx_2 in range(folder_num)], [])
             self.mask_data = sum(
-                [[self.mask_data[idx_1 + 1000 * idx_2] for idx_1 in range(train_idx, int(len(self.img_data) / folder_num))]
+                [[self.mask_data[idx_1 + 1000 * idx_2] for idx_1 in range(train_idx, int(len(self.mask_data) / folder_num))]
                  for idx_2 in range(folder_num)], [])
 
     def __len__(self):
