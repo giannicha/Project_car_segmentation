@@ -88,14 +88,13 @@ if __name__ == '__main__':
     img_path = sum([glob.glob(f'../Data/data{i}/data{i}/CameraRGB/*') for i in ['A', 'B', 'C', 'D', 'E']], [])
     mask_path = sum([glob.glob(f'../Data/data{i}/data{i}/CameraSeg/*') for i in ['A', 'B', 'C', 'D', 'E']], [])
     img_size = (160, 240)
-    t1 = A.Compose([
+    transform = A.Compose([
         A.Resize(img_size[0], img_size[1]),
         A.augmentations.transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
         ToTensorV2()
     ])
 
     train_data = CustomDataset(img_path=img_path, mask_path=mask_path, img_size=img_size, train=True,
-                               transform=t1)
+                               transform=transform)
     test_data = CustomDataset(img_path=img_path, mask_path=mask_path, img_size=img_size, train=False,
-                              transform=t1)
-    print()
+                              transform=transform)
