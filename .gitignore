@@ -1,5 +1,6 @@
 .idea
 data_loader/__pycache__
 trainer/__pycache__
+wandb/
 Data
 tmp.py
