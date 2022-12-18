@@ -11,15 +11,14 @@ from torchvision.transforms import transforms
 class CustomDataset(torch.utils.data.Dataset):
     """
     커스텀 데이터셋 생성을 위한 클래스
+
+    :param img_path: 이미지 데이터가 포함된 리스트
+    :param mask_path: 라벨 데이터가 포함된 리스트
+    :param train: 학습 데이터 : True / 평가 데이터 : False
+    :param train_transform: 전처리 객체
     """
     def __init__(self, img_path: List, mask_path: List, img_size: Tuple = (224, 224),
                  train: bool = True, train_transform: transforms.Compose = None):
-        """
-        :param img_path: 이미지 데이터가 포함된 리스트
-        :param mask_path: 라벨 데이터가 포함된 리스트
-        :param train: 학습 데이터 : True / 평가 데이터 : False
-        :param train_transform: 전처리 객체
-        """
 
         # 이미지 경로 설정
         self.img_data = img_path
@@ -63,9 +62,20 @@ class CustomDataset(torch.utils.data.Dataset):
                  for idx_2 in range(folder_num)], [])
 
     def __len__(self):
+        """
+        데이터셋의 크기를 반환하는 함수
+
+        :return len(self.img_data)
+        """
         return len(self.img_data)
 
     def __getitem__(self, idx):
+        """
+        데이터셋의 샘플을 인덱스로 반환하는 함수
+
+        :param idx: 인덱스
+        :return: img, label
+        """
         img = self.img_data[idx]
         img = Image.open(img)
         img = self.transform(img)
