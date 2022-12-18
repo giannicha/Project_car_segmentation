@@ -4,8 +4,7 @@ import numpy as np
 import albumentations as A
 
 from PIL import Image
-from typing import Union, Tuple, List
-from pathlib import Path
+from typing import List
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
 from albumentations.pytorch import ToTensorV2
@@ -20,7 +19,7 @@ class CustomDataset(torch.utils.data.Dataset):
     :param train: 학습 데이터 : True / 평가 데이터 : False
     :param transform: 전처리 객체
     """
-    def __init__(self, img_path: List, mask_path: List, img_size: Tuple = (224, 224),
+    def __init__(self, img_path: List, mask_path: List,
                  train: bool = True, transform: transforms.Compose = None):
 
         # 이미지 경로 설정
@@ -81,20 +80,16 @@ class CustomDataset(torch.utils.data.Dataset):
         return img, label
 
 
-if __name__ == '__main__':
-    # Config.json에 들어가야 할 것들 : img_size, mean, std
-    # train.py에 들어가야 할 것들 : img_path, mask_path, train_transform, CustomDataset
+def make_dataloder(data_dir: List, transform: A.Compose, train_: bool, batch_size: int):
+    """
+    데이터 로드를 반환하는 함수
+    """
+    # 1. 데이터 경로 지정
+    if data_dir[-1] == '/':
+        data_dir = data_dir[:-1]
 
-    img_path = sum([glob.glob(f'../Data/data{i}/data{i}/CameraRGB/*') for i in ['A', 'B', 'C', 'D', 'E']], [])
-    mask_path = sum([glob.glob(f'../Data/data{i}/data{i}/CameraSeg/*') for i in ['A', 'B', 'C', 'D', 'E']], [])
-    img_size = (160, 240)
-    transform = A.Compose([
-        A.Resize(img_size[0], img_size[1]),
-        A.augmentations.transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-        ToTensorV2()
-    ])
+    img_path = sum([glob.glob(f'{data_dir}/data{i}/data{i}/CameraRGB/*') for i in ['A', 'B', 'C', 'D', 'E']], [])
+    mask_path = sum([glob.glob(f'{data_dir}/data{i}/data{i}/CameraSeg/*') for i in ['A', 'B', 'C', 'D', 'E']], [])
 
-    train_data = CustomDataset(img_path=img_path, mask_path=mask_path, img_size=img_size, train=True,
-                               transform=transform)
-    test_data = CustomDataset(img_path=img_path, mask_path=mask_path, img_size=img_size, train=False,
-                              transform=transform)
+    return DataLoader(dataset=CustomDataset(img_path=img_path, mask_path=mask_path, train=train_, transform=transform),
+                      batch_size=batch_size, shuffle=train_, drop_last=True)
