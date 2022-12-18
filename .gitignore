@@ -1,2 +1,5 @@
 .idea
+data_loader/__pycache__
 trainer/__pycache__
+Data
+tmp.py
