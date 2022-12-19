@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import wandb
 from torch.utils.data import dataloader
@@ -10,7 +11,7 @@ class Trainer:
     """
 
     def __init__(self, model: torch.nn.Module, criterion: torch.nn.Module, metric_fn: Union[torch.nn.Module, torch.nn.Module],
-                 optimizer: torch.optim.Optimizer, device: str, len_epoch: int, logger,
+                 optimizer: torch.optim.Optimizer, device: str, len_epoch: int, logger, save_dir,
                  data_loader: torch.utils.data.DataLoader, valid_data_loader: torch.utils.data.DataLoader = None,
                  lr_scheduler: torch.optim.lr_scheduler = None):
 
@@ -41,67 +42,103 @@ class Trainer:
         # logger/logger.py의 Logger 클래스를 이용하여 학습로그 기록 객체 생성
         self.logger = logger
 
-        self.log = dict()
-        self.log['train_loss'] = []
-        self.log['val_loss'] = []
-        self.log['train_metric'] = []
-        self.log['val_metric'] = []
+        # 모델을 저장 할 경로 설정
+        self.save_dir = save_dir
+
+        # Early Stopping을 위한 딕셔너리 생성
+        self.es_log = {'train_loss' : [], 'val_loss' : []}
+
+        self.not_improved = 0
+        self.early_stop = 10
+        self.save_period = 10
+        self.mnt_best = np.inf
 
     def _train_epoch(self, epoch: int):
-        train_loss, train_metric = 0, 0
-        log_ = {}
+        train_loss = 0
+        train_metric = {f'{metric.__name__}': [] for metric in self.metric_fn}
 
         self.model.train()
         for batch, (x_train, y_train) in enumerate(self.data_loader):
-            x_train, y_train = x_train.to(self.device), y_train.to(self.device)
+            x_train, y_train = x_train.to(self.device), y_train.to(self.device).long()
             y_pred = self.model(x_train)
             loss = self.criterion(y_pred, y_train)
 
             train_loss += loss.item()
-            train_metric += self.metric_fn(y_pred, y_train)
+            # met_ = {f'{metric.__name__}': metric(self.data_loader, self.model, self.device) for metric in self.metric_fn}
+            # for key, value in met_.items():
+            #     train_metric[key].append(value)
 
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
         train_loss /= len(self.data_loader)
-        train_metric /= len(self.data_loader)
-        print(f'Train Loss : {train_loss:.5f} | Train Metric : {train_metric:.2f}% | ')
-        self.log['train_loss'].append(train_loss)
-        self.log['train_metric'].append(train_metric)
-        self.logger.record({f'train_loss : {train_loss}, train_metric : {train_metric}'})
+        # p_a, d_s = list(map(lambda x: sum(x) / len(self.data_loader), train_metric.values()))
+        p_a = d_s = 0
+        print(f'Train Loss : {train_loss:.5f} | Train PA : {p_a:.5f}% | Train DS : {d_s:.5f} | ', end='\n')
+        self.logger.record({'Train Loss': train_loss, 'Train P.A': p_a, 'Train D.S': d_s})
+        self.es_log['train_loss'].append(train_loss)
 
         if self.do_validation:
-            val_loss, val_metric = self._valid_epoch(epoch)
-            self.logger.record({f'val_loss : {val_loss}, val_metric : {val_metric}'})
+            self._valid_epoch(epoch)
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
 
+        # Early_Stopping
+        best = False
+
+        improved = (self.es_log['val_loss'][-1] <= self.mnt_best)
+        if improved:
+            self.mnt_best = self.es_log['val_loss'][-1]
+            self.not_improved_count = 0
+            best = True
+        else:
+            self.not_improved_count += 1
+
+        if epoch % self.save_period == 0:
+            self._save_checkpoint(epoch, save_best=best)
+
     def _valid_epoch(self, epoch: int):
-        val_metric, val_loss = 0, 0
+        val_loss = 0
+        val_metric = {f'{metric.__name__}': [] for metric in self.metric_fn}
 
         self.model.eval()
         with torch.inference_mode():
             for (x_test, y_test) in self.valid_data_loader:
-                x_test, y_test = x_test.to(self.device), y_test.to(self.device)
+                x_test, y_test = x_test.to(self.device), y_test.to(self.device).long()
                 y_pred = self.model(x_test)
                 loss = self.criterion(y_pred, y_test)
 
                 val_loss += loss.item()
-                val_metric += self.metric_fn(y_pred, y_test)
+                # met_ = {f'{metric.__name__}': metric(self.data_loader, self.model, self.device) for metric in
+                #         self.metric_fn}
+                # for key, value in met_.items():
+                #     val_metric[key].append(value)
 
             val_loss /= len(self.valid_data_loader)
-            val_metric /= len(self.valid_data_loader)
-            print(f'Val Loss : {val_loss:.5f} | Val Metric : {val_metric:.2f}%')
-            self.log['val_loss'].append(val_loss)
-            self.log['val_metric'].append(val_metric)
-
-        return val_loss, val_metric
+            # p_a, d_s = list(map(lambda x: sum(x) / len(self.valid_data_loader), val_metric.values()))
+            p_a = d_s = 0
+            print(f'Val Loss : {val_loss:.5f} | Val PA : {p_a:.5f}% | Val DS : {d_s:.5f} | ', end='\n\n')
+            self.logger.record({'Val Loss': val_loss, 'Val P.A': p_a, 'Val D.S': d_s})
+            self.es_log['val_loss'].append(val_loss)
 
     def train(self):
         for epoch in range(self.epochs):
-            print(f'\nEpoch : {epoch} | ')
+            print(f'\nEpoch : {epoch} | ', end='\n')
             self._train_epoch(epoch)
+
+            if self.not_improved_count > self.early_stop:
+                print("Validation performance didn\'t improve for {} epochs. Training stops.".format(self.early_stop))
+                break
+
         self.logger.finish()
-        return self.log
+
+    def _save_checkpoint(self, epoch, save_best=False):
+
+        filename = str(self.save_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+        torch.save(self.model.state_dict(), filename)
+        if save_best:
+            best_path = str(self.save_dir / 'model_best.pth')
+            torch.save(self.model.state_dict(), best_path)
+        print('Model saved..')

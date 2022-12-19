@@ -17,17 +17,15 @@ def pixel_accuracy(loader: DataLoader, model: nn.Module, device: str = device_) 
     """
     num_correct = 0
     num_pixels = 0
-    model.eval()
-    with torch.inference_mode():
-        for x, y in loader:
-            x = x.to(device)
-            y = y.to(device)
-            preds = torch.argmax(torch.softmax(model(x), dim=1), dim=1)
-            num_correct += (preds == y).sum()
-            num_pixels += torch.numel(preds)
+    for x, y in loader:
+        x = x.to(device)
+        y = y.to(device)
+        preds = torch.argmax(torch.softmax(model(x), dim=1), dim=1)
+        num_correct += (preds == y).sum()
+        num_pixels += torch.numel(preds)
 
     pixel_acc = (num_correct / num_pixels) * 100
-    return pixel_acc
+    return pixel_acc.cpu().item()
 
 
 def dice_score(loader: DataLoader, model: nn.Module, device: str = device_) -> float:
@@ -40,13 +38,11 @@ def dice_score(loader: DataLoader, model: nn.Module, device: str = device_) -> f
     :return: Pixel accuracy, Dice score
     """
     result = 0
-    model.eval()
-    with torch.inference_mode():
-        for x, y in loader:
-            x = x.to(device)
-            y = y.to(device)
-            preds = torch.argmax(torch.softmax(model(x), dim=1), dim=1)
-            result += (2 * (preds * y).sum()) / ((preds + y).sum() + 1e-8)
+    for x, y in loader:
+        x = x.to(device)
+        y = y.to(device)
+        preds = torch.argmax(torch.softmax(model(x), dim=1), dim=1)
+        result += (2 * (preds * y).sum()) / ((preds + y).sum() + 1e-8)
 
     result = result / len(loader)
-    return result
+    return result.cpu().item()

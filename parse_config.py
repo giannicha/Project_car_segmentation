@@ -22,6 +22,10 @@ class ConfigParser:
         self.lr_scheduler = self.config['lr_scheduler']
         self.trainer = self.config['trainer']
 
+    @property
+    def save_dir(self):
+        return self._save_dir
+
 
 if __name__ == '__main__':
     tmp = ConfigParser('./config.json', run_id='ver_0')

@@ -10,7 +10,7 @@
         "args":{
             "data_dir": "./Data/",
             "batch_size": [8, 16, 32, 64],
-            "img_size" : [168, 240]
+            "img_size" : [160, 240]
         }
     },
     "optimizer": {
@@ -32,7 +32,7 @@
         }
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": [1, 5, 10],
 
         "save_dir": "saved/",
         "save_period": 10,

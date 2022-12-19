@@ -82,17 +82,19 @@ def main(config_):
                                                                                           step_size=config.lr_scheduler['args']['step_size'])
             train_config['Optimizer'] = {'Name': config.optimizer['type'], 'Weight decay': config.optimizer['args']['weight_decay']}
             train_config['LR scheduler'] = {'Name': config.lr_scheduler['type'], 'gamma': config.lr_scheduler['args']['gamma'],
-                                            'Step size': config.lr_scheduler['args']['weight_decay']}
+                                            'Step size': config.lr_scheduler['args']['step_size']}
 
             for ep_idx, epoch in enumerate(config.trainer['epochs']):
                 train_config['Epoch'] = epoch
 
                 logger = Logger(config_file=train_config, p_name=config.module_name,
-                                r_name=f'_ver{batch_idx + lr_idx + ep_idx}')
-                trainer = Trainer(model, criterion, metrics, optimizer, device, epoch, logger,
+                                r_name=f"{loader_dict['batch_size'] * len(config.optimizer['args']['lr']) * batch_idx + len(config.optimizer['args']['lr']) * lr_idx + ep_idx}")
+                trainer = Trainer(model, criterion, metrics, optimizer, device, epoch, logger, config.save_dir,
                                   data_loader=train_dataloader, valid_data_loader=valid_dataloader,
                                   lr_scheduler=lr_scheduler)
                 trainer.train()
+                config = ConfigParser(config=config_,
+                                      run_id=f"ver_{loader_dict['batch_size'] * len(config.optimizer['args']['lr']) * batch_idx + len(config.optimizer['args']['lr']) * lr_idx + ep_idx}")
 
 
 if __name__ == '__main__':
