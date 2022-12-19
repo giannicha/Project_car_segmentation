@@ -7,7 +7,6 @@ from PIL import Image
 from typing import List
 from torch.utils.data import DataLoader
 from torchvision.transforms import transforms
-from albumentations.pytorch import ToTensorV2
 
 
 class CustomDataset(torch.utils.data.Dataset):
