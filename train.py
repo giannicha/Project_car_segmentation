@@ -59,12 +59,8 @@ def main(config_):
         for lr_idx, learning_rate in enumerate(config.optimizer['args']['lr']):
             train_config['Initial LR'] = learning_rate
 
-            # 모델 생성
-            model = getattr(module_arch, config.module_name)()
-
             # GPU 설정
             device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-            model = model.to(device)
             train_config['GPU'] = True if torch.cuda.is_available() else 'False'
 
             # 손실 함수, 평가지표 함수 생성
@@ -73,26 +69,38 @@ def main(config_):
             train_config['Loss function'] = config.loss_fn
             train_config['Metric'] = [metric for metric in config.metric_fn]
 
-            # 옵티마이저 생성 및 learning rate scheduler 생성
-            trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-            optimizer = getattr(torch.optim, config.optimizer['type'])(trainable_params, lr=learning_rate,
-                                                                       weight_decay=config.optimizer['args']['weight_decay'])
-            lr_scheduler = getattr(torch.optim.lr_scheduler, config.lr_scheduler['type'])(optimizer=optimizer,
-                                                                                          gamma=config.lr_scheduler['args']['gamma'],
-                                                                                          step_size=config.lr_scheduler['args']['step_size'])
-            train_config['Optimizer'] = {'Name': config.optimizer['type'], 'Weight decay': config.optimizer['args']['weight_decay']}
-            train_config['LR scheduler'] = {'Name': config.lr_scheduler['type'], 'gamma': config.lr_scheduler['args']['gamma'],
-                                            'Step size': config.lr_scheduler['args']['step_size']}
-
             for ep_idx, epoch in enumerate(config.trainer['epochs']):
                 train_config['Epoch'] = epoch
 
+                # 모델 생성
+                model = getattr(module_arch, config.module_name)()
+                model = model.to(device)
+
+                # 옵티마이저 생성 및 learning rate scheduler 생성
+                trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+                optimizer = getattr(torch.optim, config.optimizer['type'])(trainable_params, lr=learning_rate,
+                                                                           weight_decay=config.optimizer['args'][
+                                                                               'weight_decay'])
+                lr_scheduler = getattr(torch.optim.lr_scheduler, config.lr_scheduler['type'])(optimizer=optimizer,
+                                                                                              gamma=config.lr_scheduler[
+                                                                                                  'args']['gamma'],
+                                                                                              step_size=
+                                                                                              config.lr_scheduler[
+                                                                                                  'args']['step_size'])
+                train_config['Optimizer'] = {'Name': config.optimizer['type'],
+                                             'Weight decay': config.optimizer['args']['weight_decay']}
+                train_config['LR scheduler'] = {'Name': config.lr_scheduler['type'],
+                                                'gamma': config.lr_scheduler['args']['gamma'],
+                                                'Step size': config.lr_scheduler['args']['step_size']}
+
                 logger = Logger(config_file=train_config, p_name=config.module_name,
                                 r_name=f"ver_{len(config.trainer['epochs']) * len(config.optimizer['args']['lr']) * batch_idx + len(config.trainer['epochs']) * lr_idx + ep_idx}")
+
                 trainer = Trainer(model, criterion, metrics, optimizer, device, epoch, logger, config.save_dir,
                                   data_loader=train_dataloader, valid_data_loader=valid_dataloader,
                                   lr_scheduler=lr_scheduler)
                 trainer.train()
+
                 config = ConfigParser(config=config_,
                                       run_id=f"ver_{len(config.trainer['epochs']) * len(config.optimizer['args']['lr']) * batch_idx + len(config.trainer['epochs']) * lr_idx + ep_idx + 1}")
 
