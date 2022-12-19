@@ -7,7 +7,7 @@ import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
-# from trainer import Trainer
+from trainer import Trainer
 from data_loader.data_loaders import make_dataloder
 from albumentations.pytorch import ToTensorV2
 
@@ -87,7 +87,7 @@ def main(config_):
                 train_config['Epoch'] = epoch
 
                 trainer = Trainer(model, criterion, metrics, optimizer,
-                                  config=config,
+                                  len_epoch=epoch,
                                   device=device,
                                   data_loader=train_dataloader,
                                   valid_data_loader=valid_dataloader,
@@ -97,8 +97,8 @@ def main(config_):
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='Segmentation Template')
-    args.add_argument('-c', '--config', default=None, type=str,
-                      help='config file path (default: None)')
+    args.add_argument('-c', '--config', default='./config.json', type=str,
+                      help='config file path (default: ./config.json)')
     parser = args.parse_args()
 
     main(parser.config)
