@@ -10,6 +10,7 @@ from parse_config import ConfigParser
 from trainer import Trainer
 from data_loader.data_loaders import make_dataloder
 from albumentations.pytorch import ToTensorV2
+from logger.logger import Logger
 
 
 # 랜덤 시드를 고정함으로써 동일한 조건으로 시작.
@@ -44,7 +45,7 @@ def main(config_):
     train_config['Image size'] = loader_dict['img_size']
 
     # 배치 사이즈를 리스트로 받아 리스트 원소 개수만큼 반복
-    for batch_size in loader_dict['batch_size']:
+    for batch_idx, batch_size in enumerate(loader_dict['batch_size']):
         train_config['Batch size'] = batch_size
 
         # 배치사이즈에 따른 데이터 로더 생성
@@ -55,7 +56,7 @@ def main(config_):
                                           train_=False, batch_size=batch_size)
 
         # Learning rate를 리스트로 받아 리스트 원소 개수만큼 반복
-        for learning_rate in config.optimizer['args']['lr']:
+        for lr_idx, learning_rate in enumerate(config.optimizer['args']['lr']):
             train_config['Initial LR'] = learning_rate
 
             # 모델 생성
@@ -83,14 +84,13 @@ def main(config_):
             train_config['LR scheduler'] = {'Name': config.lr_scheduler['type'], 'gamma': config.lr_scheduler['args']['gamma'],
                                             'Step size': config.lr_scheduler['args']['weight_decay']}
 
-            for epoch in config.trainer['epochs']:
+            for ep_idx, epoch in enumerate(config.trainer['epochs']):
                 train_config['Epoch'] = epoch
 
-                trainer = Trainer(model, criterion, metrics, optimizer,
-                                  len_epoch=epoch,
-                                  device=device,
-                                  data_loader=train_dataloader,
-                                  valid_data_loader=valid_dataloader,
+                logger = Logger(config_file=train_config, p_name=config.module_name,
+                                r_name=f'_ver{batch_idx + lr_idx + ep_idx}')
+                trainer = Trainer(model, criterion, metrics, optimizer, device, epoch, logger,
+                                  data_loader=train_dataloader, valid_data_loader=valid_dataloader,
                                   lr_scheduler=lr_scheduler)
                 trainer.train()
 
