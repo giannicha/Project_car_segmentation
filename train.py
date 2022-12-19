@@ -88,13 +88,13 @@ def main(config_):
                 train_config['Epoch'] = epoch
 
                 logger = Logger(config_file=train_config, p_name=config.module_name,
-                                r_name=f"{loader_dict['batch_size'] * len(config.optimizer['args']['lr']) * batch_idx + len(config.optimizer['args']['lr']) * lr_idx + ep_idx}")
+                                r_name=f"ver_{len(config.trainer['epochs']) * len(config.optimizer['args']['lr']) * batch_idx + len(config.trainer['epochs']) * lr_idx + ep_idx}")
                 trainer = Trainer(model, criterion, metrics, optimizer, device, epoch, logger, config.save_dir,
                                   data_loader=train_dataloader, valid_data_loader=valid_dataloader,
                                   lr_scheduler=lr_scheduler)
                 trainer.train()
                 config = ConfigParser(config=config_,
-                                      run_id=f"ver_{loader_dict['batch_size'] * len(config.optimizer['args']['lr']) * batch_idx + len(config.optimizer['args']['lr']) * lr_idx + ep_idx}")
+                                      run_id=f"ver_{len(config.trainer['epochs']) * len(config.optimizer['args']['lr']) * batch_idx + len(config.trainer['epochs']) * lr_idx + ep_idx + 1}")
 
 
 if __name__ == '__main__':

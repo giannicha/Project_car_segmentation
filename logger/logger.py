@@ -51,7 +51,7 @@ if __name__ == '__main__':
                     "epochs": epoch,
                     "batch_size": batch_size
                 }
-                logger = Logger(config_file=config, p_name='Segment', r_name=f'U-Net_ver{ver_idx}')
+                logger = Logger(config_file=config, p_name='Segment', r_name=f'U-Net_ver_{ver_idx}')
                 for _ in range(epoch):
                     log_ = {'Loss': np.random.randn(), 'Acc': np.random.randn()}
                     logger.record(log_)
