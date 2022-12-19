@@ -6,7 +6,7 @@ import torch.nn.functional as F
 device_ = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
 
-def pixel_accuracy(loader: DataLoader, model: nn.Module, device: str = device_):
+def pixel_accuracy(loader: DataLoader, model: nn.Module, device: str = device_) -> float:
     """
     세그멘테이션 모델 평가 함수
 
@@ -27,11 +27,10 @@ def pixel_accuracy(loader: DataLoader, model: nn.Module, device: str = device_):
             num_pixels += torch.numel(preds)
 
     pixel_acc = (num_correct / num_pixels) * 100
-    model.train()
     return pixel_acc
 
 
-def dice_score(loader: DataLoader, model: nn.Module, device: str = device_):
+def dice_score(loader: DataLoader, model: nn.Module, device: str = device_) -> float:
     """
     세그멘테이션 모델 평가 함수
 
@@ -50,5 +49,4 @@ def dice_score(loader: DataLoader, model: nn.Module, device: str = device_):
             result += (2 * (preds * y).sum()) / ((preds + y).sum() + 1e-8)
 
     result = result / len(loader)
-    model.train()
     return result
