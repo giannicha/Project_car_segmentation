@@ -74,13 +74,17 @@ class Trainer:
             self.optimizer.step()
 
         train_loss /= len(self.data_loader)
-        p_a, d_s = list(map(lambda x: sum(x) / len(self.data_loader), train_metric.values()))
-        print(f'Train Loss : {train_loss:.5f} | Train PA : {p_a:.5f}% | Train DS : {d_s:.5f} | ', end='')
-        self.logger.record({'Train Loss': train_loss, 'Train P.A': p_a, 'Train D.S': d_s})
+        train_pa, train_ds = list(map(lambda x: sum(x) / len(self.data_loader), train_metric.values()))
+        print(f'Train Loss : {train_loss:.5f} | Train P.A : {train_pa:.5f}% | Train D.S : {train_ds:.5f} | ', end='')
         self.es_log['train_loss'].append(train_loss)
 
         if self.do_validation:
-            self._valid_epoch(epoch)
+            val_loss, val_pa, val_ds = self._valid_epoch(epoch)
+            self.logger.record({'Train Loss': train_loss, 'Train P.A': train_pa, 'Train D.S': train_ds,
+                                'Val Loss': val_loss, 'Val P.A': val_pa, 'Val D.S': val_ds})
+        else:
+            self.logger.record(
+                {'Train Loss': train_loss, 'Train P.A': train_pa, 'Train D.S': train_ds})
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
@@ -117,9 +121,10 @@ class Trainer:
 
             val_loss /= len(self.valid_data_loader)
             p_a, d_s = list(map(lambda x: sum(x) / len(self.valid_data_loader), val_metric.values()))
-            print(f'Val Loss : {val_loss:.5f} | Val PA : {p_a:.5f}% | Val DS : {d_s:.5f} | ', end='')
-            self.logger.record({'Val Loss': val_loss, 'Val P.A': p_a, 'Val D.S': d_s})
+            print(f'Val Loss : {val_loss:.5f} | Val P.A : {p_a:.5f}% | Val D.S : {d_s:.5f} | ', end='')
             self.es_log['val_loss'].append(val_loss)
+
+            return val_loss, p_a, d_s
 
     def train(self):
         for epoch in range(self.epochs):
@@ -127,7 +132,7 @@ class Trainer:
             start_time = timer()
             self._train_epoch(epoch)
             end_time = timer()
-            print(f'Training Time : {(end_time-start_time):.2f}')
+            print(f'Training Time : {(end_time-start_time):.2f}sec')
 
             if self.not_improved_count > self.early_stop:
                 print("Validation performance didn\'t improve for {} epochs. Training stops.".format(self.early_stop))
@@ -136,7 +141,6 @@ class Trainer:
         self.logger.finish()
 
     def _save_checkpoint(self, epoch, save_best=False):
-
         filename = str(self.save_dir / 'checkpoint-epoch{}.pth'.format(epoch))
         torch.save(self.model.state_dict(), filename)
         if save_best:
