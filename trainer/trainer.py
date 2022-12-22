@@ -3,6 +3,7 @@ import torch
 import wandb
 from torch.utils.data import dataloader
 from typing import List, Union
+from timeit import default_timer as timer
 
 
 class Trainer:
@@ -74,7 +75,7 @@ class Trainer:
 
         train_loss /= len(self.data_loader)
         p_a, d_s = list(map(lambda x: sum(x) / len(self.data_loader), train_metric.values()))
-        print(f'Train Loss : {train_loss:.5f} | Train PA : {p_a:.5f}% | Train DS : {d_s:.5f} | ', end='\n')
+        print(f'Train Loss : {train_loss:.5f} | Train PA : {p_a:.5f}% | Train DS : {d_s:.5f} | ', end='')
         self.logger.record({'Train Loss': train_loss, 'Train P.A': p_a, 'Train D.S': d_s})
         self.es_log['train_loss'].append(train_loss)
 
@@ -116,14 +117,17 @@ class Trainer:
 
             val_loss /= len(self.valid_data_loader)
             p_a, d_s = list(map(lambda x: sum(x) / len(self.valid_data_loader), val_metric.values()))
-            print(f'Val Loss : {val_loss:.5f} | Val PA : {p_a:.5f}% | Val DS : {d_s:.5f} | ', end='\n\n')
+            print(f'Val Loss : {val_loss:.5f} | Val PA : {p_a:.5f}% | Val DS : {d_s:.5f} | ', end='')
             self.logger.record({'Val Loss': val_loss, 'Val P.A': p_a, 'Val D.S': d_s})
             self.es_log['val_loss'].append(val_loss)
 
     def train(self):
         for epoch in range(self.epochs):
-            print(f'\nEpoch : {epoch} | ', end='\n')
+            print(f'\nEpoch : {epoch} | ', end='')
+            start_time = timer()
             self._train_epoch(epoch)
+            end_time = timer()
+            print(f'Training Time : {(end_time-start_time):.2f}')
 
             if self.not_improved_count > self.early_stop:
                 print("Validation performance didn\'t improve for {} epochs. Training stops.".format(self.early_stop))
