@@ -64,17 +64,16 @@ class Trainer:
             loss = self.criterion(y_pred, y_train)
 
             train_loss += loss.item()
-            # met_ = {f'{metric.__name__}': metric(self.data_loader, self.model, self.device) for metric in self.metric_fn}
-            # for key, value in met_.items():
-            #     train_metric[key].append(value)
+            met_ = {f'{metric.__name__}': metric(x_train, y_train, self.model, self.device) for metric in self.metric_fn}
+            for key, value in met_.items():
+                train_metric[key].append(value)
 
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
         train_loss /= len(self.data_loader)
-        # p_a, d_s = list(map(lambda x: sum(x) / len(self.data_loader), train_metric.values()))
-        p_a = d_s = 0
+        p_a, d_s = list(map(lambda x: sum(x) / len(self.data_loader), train_metric.values()))
         print(f'Train Loss : {train_loss:.5f} | Train PA : {p_a:.5f}% | Train DS : {d_s:.5f} | ', end='\n')
         self.logger.record({'Train Loss': train_loss, 'Train P.A': p_a, 'Train D.S': d_s})
         self.es_log['train_loss'].append(train_loss)
@@ -111,14 +110,13 @@ class Trainer:
                 loss = self.criterion(y_pred, y_test)
 
                 val_loss += loss.item()
-                # met_ = {f'{metric.__name__}': metric(self.data_loader, self.model, self.device) for metric in
-                #         self.metric_fn}
-                # for key, value in met_.items():
-                #     val_metric[key].append(value)
+                met_ = {f'{metric.__name__}': metric(x_test, y_test, self.model, self.device) for metric in
+                        self.metric_fn}
+                for key, value in met_.items():
+                    val_metric[key].append(value)
 
             val_loss /= len(self.valid_data_loader)
-            # p_a, d_s = list(map(lambda x: sum(x) / len(self.valid_data_loader), val_metric.values()))
-            p_a = d_s = 0
+            p_a, d_s = list(map(lambda x: sum(x) / len(self.valid_data_loader), val_metric.values()))
             print(f'Val Loss : {val_loss:.5f} | Val PA : {p_a:.5f}% | Val DS : {d_s:.5f} | ', end='\n\n')
             self.logger.record({'Val Loss': val_loss, 'Val P.A': p_a, 'Val D.S': d_s})
             self.es_log['val_loss'].append(val_loss)
