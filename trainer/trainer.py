@@ -142,4 +142,3 @@ class Trainer:
         if save_best:
             best_path = str(self.save_dir / 'model_best.pth')
             torch.save(self.model.state_dict(), best_path)
-        print('Model saved..')
