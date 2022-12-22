@@ -110,8 +110,7 @@ class Trainer:
                 loss = self.criterion(y_pred, y_test)
 
                 val_loss += loss.item()
-                met_ = {f'{metric.__name__}': metric(x_test, y_test, self.model, self.device) for metric in
-                        self.metric_fn}
+                met_ = {f'{metric.__name__}': metric(x_test, y_test, self.model, self.device) for metric in self.metric_fn}
                 for key, value in met_.items():
                     val_metric[key].append(value)
 
